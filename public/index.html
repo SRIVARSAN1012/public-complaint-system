@@ -1,51 +1,234 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Public Complaint System</title>
-
-    <!-- Bootstrap -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <!-- Custom CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
+<body class="app-page">
+    <div class="app-layout">
+        <aside class="app-sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-mark">CF</div>
+                <div>
+                    <div class="brand-eyebrow">Smart City</div>
+                    <div class="brand-name">CivicFlow</div>
+                </div>
+            </div>
 
-<body>
+            <nav class="sidebar-nav">
+                <a class="sidebar-link active" href="#dashboardSection">
+                    <i class="bi bi-grid-1x2-fill"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a class="sidebar-link" href="#submissionSection">
+                    <i class="bi bi-plus-square-fill"></i>
+                    <span>Submit Complaint</span>
+                </a>
+                <a class="sidebar-link" href="#complaintsSection">
+                    <i class="bi bi-chat-square-text-fill"></i>
+                    <span>Complaints</span>
+                </a>
+                <a class="sidebar-link" href="#rewardsSection">
+                    <i class="bi bi-gift-fill"></i>
+                    <span>Rewards / Credits</span>
+                </a>
+            </nav>
 
-<div class="container mt-5">
+            <div class="sidebar-footer">
+                <div class="sidebar-footer-label">Citizen Workspace</div>
+                <p class="sidebar-footer-copy">Track community issues, earn credits, and follow resolution progress in one place.</p>
+            </div>
+        </aside>
 
-    <!-- Title -->
-    <h2 class="text-center mb-4">🚨 Public Complaint System</h2>
+        <div class="app-main">
+            <header class="topbar">
+                <div class="topbar-brand">
+                    <div class="brand-mark small">CF</div>
+                    <div>
+                        <div class="brand-eyebrow">Citizen Portal</div>
+                        <div class="topbar-title">Public Complaint System</div>
+                    </div>
+                </div>
 
-    <!-- Complaint Form -->
-    <div class="card shadow p-4 mb-4">
-        <h5 class="mb-3">Submit a Complaint</h5>
+                <div class="topbar-actions">
+                    <div class="topbar-pill credits-pill">
+                        <i class="bi bi-coin"></i>
+                        <span id="topCreditsValue">0 Credits</span>
+                    </div>
+                    <div class="topbar-user">
+                        <div class="user-avatar"><i class="bi bi-person-fill"></i></div>
+                        <div>
+                            <div class="topbar-meta">Signed in as</div>
+                            <div class="topbar-user-name" id="usernameLabel">user</div>
+                        </div>
+                    </div>
+                    <button class="btn btn-outline-danger" onclick="logout()">Logout</button>
+                </div>
+            </header>
 
-        <input id="name" class="form-control mb-3" placeholder="Your Name">
+            <main class="content-area app-shell">
+                <section id="dashboardSection" class="content-section">
+                    <div class="section-heading">
+                        <div>
+                            <p class="eyebrow mb-2">Overview</p>
+                            <h2 class="section-title">Citizen Dashboard</h2>
+                            <p class="section-copy mb-0">A production-style workspace for reporting issues, validating complaints, and tracking outcomes.</p>
+                        </div>
+                    </div>
 
-        <input id="issue" class="form-control mb-3" placeholder="Issue (e.g. Garbage, Streetlight)">
+                    <div class="row g-3">
+                        <div class="col-lg-3 col-sm-6">
+                            <div class="summary-card total-card">
+                                <p class="summary-label">Total Complaints</p>
+                                <h3 id="userTotalCount">0</h3>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-sm-6">
+                            <div class="summary-card pending-card">
+                                <p class="summary-label">Pending</p>
+                                <h3 id="userPendingCount">0</h3>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-sm-6">
+                            <div class="summary-card resolved-card">
+                                <p class="summary-label">Resolved</p>
+                                <h3 id="userResolvedCount">0</h3>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-sm-6">
+                            <div class="summary-card overdue-card">
+                                <p class="summary-label">High Priority</p>
+                                <h3 id="userHighPriorityCount">0</h3>
+                            </div>
+                        </div>
+                    </div>
+                </section>
 
-        <input id="location" class="form-control mb-3" placeholder="Location">
+                <section id="rewardsSection" class="content-section">
+                    <div class="row g-3">
+                        <div class="col-lg-4">
+                            <div class="reward-summary-card h-100">
+                                <p class="summary-label mb-2">Your Civic Credits</p>
+                                <h3 id="creditsValue" class="mb-2">0</h3>
+                                <p id="creditsHint" class="text-muted mb-0">500 credits unlock a reward coupon.</p>
+                            </div>
+                        </div>
+                        <div class="col-lg-8">
+                            <div class="section-card h-100">
+                                <div class="card-body p-4">
+                                    <div class="section-inline-header mb-3">
+                                        <div>
+                                            <h5 class="mb-1">Reward Coupons</h5>
+                                            <p class="text-muted mb-0">Redeem unlocked civic reward coupons as your contributions grow.</p>
+                                        </div>
+                                        <button class="btn btn-outline-primary" onclick="loadRewards()">Refresh Rewards</button>
+                                    </div>
+                                    <div id="couponList" class="coupon-grid"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
 
-        <button class="btn btn-primary w-100" onclick="submitComplaint()">
-            Submit Complaint
-        </button>
-    </div>
+                <section id="submissionSection" class="content-section">
+                    <div class="section-card">
+                        <div class="card-body p-4">
+                            <div class="section-inline-header mb-3">
+                                <div>
+                                    <h5 class="mb-1">Submit a Complaint</h5>
+                                    <p class="text-muted mb-0">Share the issue, area, live location, and an optional image.</p>
+                                </div>
+                            </div>
 
-    <!-- Complaint List -->
-    <div class="card shadow p-4">
-        <div class="d-flex justify-content-between align-items-center">
-            <h5>📋 Complaints</h5>
-            <button class="btn btn-success" onclick="loadComplaints()">Refresh</button>
+                            <div class="row g-3">
+                                <div class="col-lg-6">
+                                    <input id="name" class="form-control" placeholder="Your Name">
+                                </div>
+                                <div class="col-lg-6">
+                                    <div class="ai-preview-card">
+                                        <p class="small text-muted mb-2">AI Classification Preview</p>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <span class="status-pill status-progress">Category: <span id="aiCategoryLabel" class="ms-1">Infrastructure</span></span>
+                                            <span class="priority-pill priority-medium">Priority: <span id="aiPriorityLabel" class="ms-1">Medium</span></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <input id="issue" class="form-control" placeholder="Describe the issue in detail">
+                                </div>
+                                <div class="col-lg-8">
+                                    <input id="area" class="form-control" placeholder="Area / locality name">
+                                    <small id="coordsLabel" class="coords-note">Coordinates not captured yet.</small>
+                                </div>
+                                <div class="col-lg-4">
+                                    <button class="btn btn-outline-primary w-100" type="button" onclick="useMyLocation()">Use My Location</button>
+                                </div>
+                                <div class="col-lg-6">
+                                    <input id="image" type="file" class="form-control" accept="image/*">
+                                </div>
+                                <div class="col-lg-6">
+                                    <div id="imagePreview" class="image-preview empty-state">No image selected</div>
+                                </div>
+                            </div>
+
+                            <button class="btn btn-primary w-100 mt-4" onclick="submitComplaint()">Submit Complaint</button>
+
+                            <div id="assignmentPanel" class="assignment-panel mt-4 d-none">
+                                <p class="assignment-title mb-2">Assigned Department Contact</p>
+                                <div class="assignment-grid">
+                                    <div><strong>Admin:</strong> <span id="assignedAdminName">-</span></div>
+                                    <div><strong>Phone:</strong> <span id="assignedAdminPhone">-</span></div>
+                                    <div><strong>Category:</strong> <span id="assignedCategory">-</span></div>
+                                    <div><strong>Deadline:</strong> <span id="assignedDeadline">-</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="complaintsSection" class="content-section">
+                    <div class="section-card">
+                        <div class="card-body p-4">
+                            <div class="section-inline-header mb-3">
+                                <div>
+                                    <h5 class="mb-1">Recent Complaints</h5>
+                                    <p class="text-muted mb-0">Track AI classification, routing, complaint progress, and community support.</p>
+                                </div>
+                                <button class="btn btn-success" onclick="loadComplaints()">Refresh</button>
+                            </div>
+
+                            <div class="row g-3 filter-bar">
+                                <div class="col-md-8">
+                                    <input id="searchInput" class="form-control" placeholder="Search by complaint text">
+                                </div>
+                                <div class="col-md-4">
+                                    <select id="statusFilter" class="form-select">
+                                        <option value="All">All Statuses</option>
+                                        <option value="Pending">Pending</option>
+                                        <option value="In Progress">In Progress</option>
+                                        <option value="Resolved">Resolved</option>
+                                        <option value="Overdue">Overdue</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div id="list" class="row g-3 mt-1"></div>
+                        </div>
+                    </div>
+                </section>
+            </main>
         </div>
-
-        <ul id="list" class="list-group mt-3"></ul>
     </div>
 
-</div>
+    <div id="toastBox" class="toast-box"></div>
 
-<!-- Script -->
-<script src="script.js"></script>
-
+    <script src="script.js"></script>
 </body>
 </html>

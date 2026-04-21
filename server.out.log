@@ -1,0 +1,18 @@
+MongoDB connected
+Server running at http://localhost:5000
+Affirm request body: { name: 'reward-check-1' }
+Affirmation count after save: 4
+Add complaint payload: [Object: null prototype] {
+  name: 'user',
+  issue: 'biohazard waste near hospital',
+  area: 'Zone 15 Sholinganallur'
+} {
+  fieldname: 'image',
+  originalname: '1000_F_548722482_7UdJisg7HBTYkd6pVgEQzkOChweyFtSI.jpg',
+  encoding: '7bit',
+  mimetype: 'image/jpeg',
+  destination: 'C:\\Users\\sriva\\OneDrive\\Desktop\\complaint\\uploads',
+  filename: '1776750920583-1000_f_548722482_7udjisg7hbtykd6pvgeqzkochweyftsi.jpg',
+  path: 'C:\\Users\\sriva\\OneDrive\\Desktop\\complaint\\uploads\\1776750920583-1000_f_548722482_7udjisg7hbtykd6pvgeqzkochweyftsi.jpg',
+  size: 607590
+}
