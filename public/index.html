@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="app-page">
@@ -23,27 +24,34 @@
             </div>
 
             <nav class="sidebar-nav">
-                <a class="sidebar-link active" href="#dashboardSection">
+                <a class="sidebar-link active" href="#dashboardSection" data-nav-target="dashboardSection">
                     <i class="bi bi-grid-1x2-fill"></i>
                     <span>Dashboard</span>
                 </a>
-                <a class="sidebar-link" href="#submissionSection">
-                    <i class="bi bi-plus-square-fill"></i>
-                    <span>Submit Complaint</span>
-                </a>
-                <a class="sidebar-link" href="#complaintsSection">
+                <a class="sidebar-link" href="#complaintsSection" data-nav-target="complaintsSection">
                     <i class="bi bi-chat-square-text-fill"></i>
                     <span>Complaints</span>
                 </a>
-                <a class="sidebar-link" href="#rewardsSection">
-                    <i class="bi bi-gift-fill"></i>
+                <a class="sidebar-link" href="#hotspotsSection" data-nav-target="hotspotsSection">
+                    <i class="bi bi-geo-alt-fill"></i>
+                    <span>Hotspots Map</span>
+                </a>
+                <a class="sidebar-link" href="#rewardsSection" data-nav-target="rewardsSection">
+                    <i class="bi bi-coin"></i>
                     <span>Rewards / Credits</span>
                 </a>
             </nav>
 
+            <div class="sidebar-cta">
+                <button class="btn btn-primary w-100" type="button" onclick="scrollToSection('submissionSection')">
+                    <i class="bi bi-plus-circle me-2"></i>
+                    New Complaint
+                </button>
+            </div>
+
             <div class="sidebar-footer">
                 <div class="sidebar-footer-label">Citizen Workspace</div>
-                <p class="sidebar-footer-copy">Track community issues, earn credits, and follow resolution progress in one place.</p>
+                <p class="sidebar-footer-copy">Report issues, monitor city response, and unlock community rewards in one production-grade portal.</p>
             </div>
         </aside>
 
@@ -60,7 +68,10 @@
                 <div class="topbar-actions">
                     <div class="topbar-pill credits-pill">
                         <i class="bi bi-coin"></i>
-                        <span id="topCreditsValue">0 Credits</span>
+                        <div>
+                            <div class="topbar-meta">Credits</div>
+                            <span id="topCreditsValue">0</span>
+                        </div>
                     </div>
                     <div class="topbar-user">
                         <div class="user-avatar"><i class="bi bi-person-fill"></i></div>
@@ -79,58 +90,66 @@
                         <div>
                             <p class="eyebrow mb-2">Overview</p>
                             <h2 class="section-title">Citizen Dashboard</h2>
-                            <p class="section-copy mb-0">A production-style workspace for reporting issues, validating complaints, and tracking outcomes.</p>
+                            <p class="section-copy mb-0">A modern civic workspace for reporting issues, validating complaints, and following resolution progress.</p>
                         </div>
                     </div>
 
-                    <div class="row g-3">
-                        <div class="col-lg-3 col-sm-6">
-                            <div class="summary-card total-card">
-                                <p class="summary-label">Total Complaints</p>
-                                <h3 id="userTotalCount">0</h3>
+                    <div class="row g-4">
+                        <div class="col-xxl-8">
+                            <div class="row g-4">
+                                <div class="col-lg-3 col-sm-6">
+                                    <div class="summary-card total-card">
+                                        <p class="summary-label">Total Complaints</p>
+                                        <h3 id="userTotalCount">0</h3>
+                                        <p class="summary-note">All tracked complaints</p>
+                                    </div>
+                                </div>
+                                <div class="col-lg-3 col-sm-6">
+                                    <div class="summary-card pending-card">
+                                        <p class="summary-label">Pending</p>
+                                        <h3 id="userPendingCount">0</h3>
+                                        <p class="summary-note">Awaiting action</p>
+                                    </div>
+                                </div>
+                                <div class="col-lg-3 col-sm-6">
+                                    <div class="summary-card resolved-card">
+                                        <p class="summary-label">Resolved</p>
+                                        <h3 id="userResolvedCount">0</h3>
+                                        <p class="summary-note">Closed successfully</p>
+                                    </div>
+                                </div>
+                                <div class="col-lg-3 col-sm-6">
+                                    <div class="summary-card overdue-card">
+                                        <p class="summary-label">High Priority</p>
+                                        <h3 id="userHighPriorityCount">0</h3>
+                                        <p class="summary-note">Needs attention fast</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div class="col-lg-3 col-sm-6">
-                            <div class="summary-card pending-card">
-                                <p class="summary-label">Pending</p>
-                                <h3 id="userPendingCount">0</h3>
-                            </div>
-                        </div>
-                        <div class="col-lg-3 col-sm-6">
-                            <div class="summary-card resolved-card">
-                                <p class="summary-label">Resolved</p>
-                                <h3 id="userResolvedCount">0</h3>
-                            </div>
-                        </div>
-                        <div class="col-lg-3 col-sm-6">
-                            <div class="summary-card overdue-card">
-                                <p class="summary-label">High Priority</p>
-                                <h3 id="userHighPriorityCount">0</h3>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <section id="rewardsSection" class="content-section">
-                    <div class="row g-3">
-                        <div class="col-lg-4">
-                            <div class="reward-summary-card h-100">
-                                <p class="summary-label mb-2">Your Civic Credits</p>
-                                <h3 id="creditsValue" class="mb-2">0</h3>
-                                <p id="creditsHint" class="text-muted mb-0">500 credits unlock a reward coupon.</p>
-                            </div>
-                        </div>
-                        <div class="col-lg-8">
-                            <div class="section-card h-100">
+                        <div class="col-xxl-4">
+                            <div class="section-card quick-actions-card h-100">
                                 <div class="card-body p-4">
                                     <div class="section-inline-header mb-3">
                                         <div>
-                                            <h5 class="mb-1">Reward Coupons</h5>
-                                            <p class="text-muted mb-0">Redeem unlocked civic reward coupons as your contributions grow.</p>
+                                            <h5 class="mb-1">Quick Actions</h5>
+                                            <p class="text-muted mb-0">Jump into the tasks citizens use most.</p>
                                         </div>
-                                        <button class="btn btn-outline-primary" onclick="loadRewards()">Refresh Rewards</button>
                                     </div>
-                                    <div id="couponList" class="coupon-grid"></div>
+                                    <div class="quick-action-grid">
+                                        <button class="btn btn-primary" type="button" onclick="scrollToSection('submissionSection')">
+                                            <i class="bi bi-plus-circle me-2"></i>Submit Complaint
+                                        </button>
+                                        <button class="btn btn-outline-primary" type="button" onclick="scrollToSection('complaintsSection')">
+                                            <i class="bi bi-list-ul me-2"></i>Review Complaints
+                                        </button>
+                                        <button class="btn btn-outline-primary" type="button" onclick="scrollToSection('hotspotsSection')">
+                                            <i class="bi bi-geo-alt me-2"></i>Open Hotspots
+                                        </button>
+                                        <button class="btn btn-outline-primary" type="button" onclick="scrollToSection('rewardsSection')">
+                                            <i class="bi bi-gift me-2"></i>View Rewards
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -143,12 +162,13 @@
                             <div class="section-inline-header mb-3">
                                 <div>
                                     <h5 class="mb-1">Submit a Complaint</h5>
-                                    <p class="text-muted mb-0">Share the issue, area, live location, and an optional image.</p>
+                                    <p class="text-muted mb-0">Share the issue, locality, live location, and an optional image without leaving the dashboard.</p>
                                 </div>
                             </div>
 
                             <div class="row g-3">
                                 <div class="col-lg-6">
+                                    <label for="name" class="form-label field-label">Your Name</label>
                                     <input id="name" class="form-control" placeholder="Your Name">
                                 </div>
                                 <div class="col-lg-6">
@@ -161,19 +181,24 @@
                                     </div>
                                 </div>
                                 <div class="col-12">
+                                    <label for="issue" class="form-label field-label">Complaint Title / Description</label>
                                     <input id="issue" class="form-control" placeholder="Describe the issue in detail">
                                 </div>
                                 <div class="col-lg-8">
+                                    <label for="area" class="form-label field-label">Location</label>
                                     <input id="area" class="form-control" placeholder="Area / locality name">
                                     <small id="coordsLabel" class="coords-note">Coordinates not captured yet.</small>
                                 </div>
                                 <div class="col-lg-4">
+                                    <label class="form-label field-label d-block">&nbsp;</label>
                                     <button class="btn btn-outline-primary w-100" type="button" onclick="useMyLocation()">Use My Location</button>
                                 </div>
                                 <div class="col-lg-6">
+                                    <label for="image" class="form-label field-label">Add Photo</label>
                                     <input id="image" type="file" class="form-control" accept="image/*">
                                 </div>
                                 <div class="col-lg-6">
+                                    <label class="form-label field-label">Preview</label>
                                     <div id="imagePreview" class="image-preview empty-state">No image selected</div>
                                 </div>
                             </div>
@@ -198,10 +223,10 @@
                         <div class="card-body p-4">
                             <div class="section-inline-header mb-3">
                                 <div>
-                                    <h5 class="mb-1">Recent Complaints</h5>
-                                    <p class="text-muted mb-0">Track AI classification, routing, complaint progress, and community support.</p>
+                                    <h5 class="mb-1">Complaints</h5>
+                                    <p class="text-muted mb-0">Review complaint cards with status, priority, community support, and next actions.</p>
                                 </div>
-                                <button class="btn btn-success" onclick="loadComplaints()">Refresh</button>
+                                <button class="btn btn-outline-primary" onclick="loadComplaints()">Refresh</button>
                             </div>
 
                             <div class="row g-3 filter-bar">
@@ -219,7 +244,66 @@
                                 </div>
                             </div>
 
-                            <div id="list" class="row g-3 mt-1"></div>
+                            <div id="list" class="row g-4 mt-1"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="hotspotsSection" class="content-section">
+                    <div class="section-card">
+                        <div class="card-body p-4">
+                            <div class="section-inline-header mb-3">
+                                <div>
+                                    <h5 class="mb-1">Complaint Hotspots</h5>
+                                    <p class="text-muted mb-0">Monitor how complaint density and community support cluster across neighborhoods.</p>
+                                </div>
+                                <button class="btn btn-outline-primary" onclick="loadHotspots()">Refresh Map</button>
+                            </div>
+
+                            <div id="hotspotMap" class="hotspot-map"></div>
+
+                            <div class="hotspot-legend mt-3">
+                                <span class="legend-title">Severity Legend</span>
+                                <span class="legend-item"><span class="legend-dot legend-green"></span>Green -> low</span>
+                                <span class="legend-item"><span class="legend-dot legend-orange"></span>Orange -> medium</span>
+                                <span class="legend-item"><span class="legend-dot legend-red"></span>Red -> high</span>
+                            </div>
+
+                            <div class="area-panel mt-4">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <div>
+                                        <h6 class="mb-1">Area Drill Down</h6>
+                                        <p id="areaPanelTitle" class="text-muted mb-0">Click a hotspot marker to inspect complaints for that area.</p>
+                                    </div>
+                                </div>
+                                <div id="areaComplaintList" class="row g-3"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="rewardsSection" class="content-section">
+                    <div class="row g-4">
+                        <div class="col-lg-4">
+                            <div class="reward-summary-card h-100">
+                                <p class="summary-label mb-2">Your Civic Credits</p>
+                                <h3 id="creditsValue" class="mb-2">0</h3>
+                                <p id="creditsHint" class="text-muted mb-0">500 credits unlock a reward coupon.</p>
+                            </div>
+                        </div>
+                        <div class="col-lg-8">
+                            <div class="section-card h-100">
+                                <div class="card-body p-4">
+                                    <div class="section-inline-header mb-3">
+                                        <div>
+                                            <h5 class="mb-1">Reward Coupons</h5>
+                                            <p class="text-muted mb-0">Redeem unlocked reward coupons as your contributions grow.</p>
+                                        </div>
+                                        <button class="btn btn-outline-primary" onclick="loadRewards()">Refresh Rewards</button>
+                                    </div>
+                                    <div id="couponList" class="coupon-grid"></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -229,6 +313,7 @@
 
     <div id="toastBox" class="toast-box"></div>
 
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

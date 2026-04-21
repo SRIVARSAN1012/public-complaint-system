@@ -1,6 +1,8 @@
 let searchTimer;
 let currentUsername = "";
 let currentCredits = 0;
+let hotspotMap;
+let hotspotLayer;
 let selectedCoordinates = {
     lat: null,
     lng: null
@@ -8,7 +10,6 @@ let selectedCoordinates = {
 
 function predictComplaintMetadata(issueText) {
     const text = issueText.toLowerCase();
-
     const cleaningKeywords = ["garbage", "waste", "trash", "dump", "sewage", "drain", "clean", "sanitation", "smell"];
     const healthKeywords = ["hospital", "health", "medical", "clinic", "mosquito", "fever", "disease", "infection", "toilet", "water contamination"];
     const highKeywords = ["urgent", "danger", "collapse", "fire", "flood", "severe", "accident", "outbreak", "blocked drain", "overflow"];
@@ -43,7 +44,6 @@ async function ensureUserPage() {
         }
 
         const user = await response.json();
-
         if (user.role !== "user") {
             window.location.replace(user.redirectTo);
             return false;
@@ -53,6 +53,7 @@ async function ensureUserPage() {
         if (usernameLabel) {
             usernameLabel.innerText = user.username;
         }
+
         currentUsername = user.username || "";
         renderCredits(user.credits || 0, user.creditsToNextCoupon);
 
@@ -72,10 +73,16 @@ function logout() {
     window.location.replace("/logout");
 }
 
+function scrollToSection(sectionId) {
+    const target = document.getElementById(sectionId);
+    if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+}
+
 async function reverseGeocode(lat, lng) {
     try {
         const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`);
-
         if (!response.ok) {
             throw new Error("Reverse geocoding failed");
         }
@@ -114,10 +121,7 @@ async function useMyLocation() {
             const latitude = Number(position.coords.latitude.toFixed(6));
             const longitude = Number(position.coords.longitude.toFixed(6));
 
-            selectedCoordinates = {
-                lat: latitude,
-                lng: longitude
-            };
+            selectedCoordinates = { lat: latitude, lng: longitude };
 
             const areaName = await reverseGeocode(latitude, longitude);
             areaInput.value = areaName || `Coordinates (${latitude}, ${longitude})`;
@@ -145,12 +149,10 @@ function previewSelectedImage() {
     }
 
     const reader = new FileReader();
-
     reader.onload = event => {
         preview.className = "image-preview";
         preview.innerHTML = `<img src="${event.target.result}" alt="Complaint preview">`;
     };
-
     reader.readAsDataURL(file);
 }
 
@@ -199,7 +201,6 @@ async function submitComplaint() {
             method: "POST",
             body: formData
         });
-
         const data = await response.json();
 
         if (!response.ok) {
@@ -211,10 +212,14 @@ async function submitComplaint() {
         showAssignmentPanel(data.complaint);
         handleRewardUpdate(data.rewards);
         clearForm();
+
         await Promise.all([
             loadComplaints(),
-            loadRewards()
+            loadRewards(),
+            loadUserSummary(),
+            loadHotspots()
         ]);
+        scrollToSection("complaintsSection");
     } catch (error) {
         if (error.message === "Please log in first") {
             window.location.replace("/");
@@ -243,10 +248,7 @@ function getFilters() {
 
 function formatLocation(location) {
     if (!location) {
-        return {
-            area: "-",
-            coords: "-"
-        };
+        return { area: "-", coords: "-" };
     }
 
     const area = location.area || "-";
@@ -261,16 +263,13 @@ function getAffirmationCount(complaint) {
     if (typeof complaint?.affirmationCount === "number") {
         return complaint.affirmationCount;
     }
-
     return complaint?.affirmations ? complaint.affirmations.length : 0;
 }
 
 function getSupportText(affirmationCount) {
-    if (affirmationCount === 1) {
-        return "1 person supports this issue";
-    }
-
-    return `${affirmationCount} people support this issue`;
+    return affirmationCount === 1
+        ? "1 person supports this issue"
+        : `${affirmationCount} people support this issue`;
 }
 
 function getCreditsToNextCoupon(credits) {
@@ -283,9 +282,14 @@ function renderCredits(credits, creditsToNextCoupon = getCreditsToNextCoupon(cre
 
     const creditsValue = document.getElementById("creditsValue");
     const creditsHint = document.getElementById("creditsHint");
+    const topCreditsValue = document.getElementById("topCreditsValue");
 
     if (creditsValue) {
         creditsValue.innerText = credits;
+    }
+
+    if (topCreditsValue) {
+        topCreditsValue.innerText = `${credits}`;
     }
 
     if (creditsHint) {
@@ -295,7 +299,6 @@ function renderCredits(credits, creditsToNextCoupon = getCreditsToNextCoupon(cre
 
 function renderCoupons(coupons) {
     const couponList = document.getElementById("couponList");
-
     if (!couponList) {
         return;
     }
@@ -320,9 +323,11 @@ function renderCoupons(coupons) {
             </div>
             <div class="coupon-value mb-3">₹${coupon.value || 50}</div>
             <div class="small text-muted mb-3">Issued on ${formatDate(coupon.createdAt)}</div>
-            ${coupon.used
-                ? '<button class="btn btn-outline-secondary w-100" disabled>Redeemed</button>'
-                : `<button class="btn btn-outline-primary w-100" onclick="redeemCoupon('${coupon.code}')">Redeem Coupon</button>`}
+            <div class="card-actions pt-0 border-0 mt-0">
+                ${coupon.used
+                    ? '<button class="btn btn-outline-secondary w-100" disabled>Redeemed</button>'
+                    : `<button class="btn btn-outline-primary w-100" onclick="redeemCoupon('${coupon.code}')">Redeem Coupon</button>`}
+            </div>
         </div>
     `).join("");
 }
@@ -365,7 +370,6 @@ async function loadRewards() {
         if (!profileResponse.ok) {
             throw new Error(profile.message || profile.error || "Unable to load credits");
         }
-
         if (!couponsResponse.ok) {
             throw new Error(coupons.message || coupons.error || "Unable to load coupons");
         }
@@ -404,7 +408,6 @@ async function affirmComplaint(id) {
     }
 
     const name = enteredName.trim();
-
     if (!name) {
         showMessage("Please enter a name to affirm this issue.", "danger");
         return;
@@ -426,7 +429,9 @@ async function affirmComplaint(id) {
         handleRewardUpdate(data.rewards);
         await Promise.all([
             loadComplaints(),
-            loadRewards()
+            loadRewards(),
+            loadUserSummary(),
+            loadHotspots()
         ]);
     } catch (error) {
         if (error.message === "Please log in first") {
@@ -438,10 +443,36 @@ async function affirmComplaint(id) {
     }
 }
 
+function updateUserSummary(complaints) {
+    const total = complaints.length;
+    const pending = complaints.filter(complaint => complaint.status === "Pending").length;
+    const resolved = complaints.filter(complaint => complaint.status === "Resolved").length;
+    const highPriority = complaints.filter(complaint => complaint.priority === "High" || complaint.isOverdue).length;
+
+    document.getElementById("userTotalCount").innerText = total;
+    document.getElementById("userPendingCount").innerText = pending;
+    document.getElementById("userResolvedCount").innerText = resolved;
+    document.getElementById("userHighPriorityCount").innerText = highPriority;
+}
+
+async function loadUserSummary() {
+    try {
+        const response = await fetch("/complaints");
+        if (response.status === 401) {
+            window.location.replace("/");
+            return;
+        }
+
+        const data = await response.json();
+        updateUserSummary(Array.isArray(data) ? data : []);
+    } catch (error) {
+        showToast("Unable to load dashboard summary.");
+    }
+}
+
 async function loadComplaints() {
     try {
         const response = await fetch(`/complaints${getFilters()}`);
-
         if (response.status === 401) {
             window.location.replace("/");
             return;
@@ -464,8 +495,10 @@ async function loadComplaints() {
         list.innerHTML = data.map(complaint => {
             const location = formatLocation(complaint.location);
             const affirmationCount = getAffirmationCount(complaint);
+            const canFocusMap = Boolean(complaint.location?.area);
+
             return `
-                <div class="col-lg-6">
+                <div class="col-xl-6">
                     <div class="card complaint-card h-100 ${complaint.isOverdue ? "overdue-complaint" : ""}">
                         ${complaint.image ? `<img src="${complaint.image}" class="complaint-image" alt="Complaint image">` : ""}
                         <div class="card-body">
@@ -477,19 +510,44 @@ async function loadComplaints() {
                                 <div class="d-flex flex-wrap gap-2 justify-content-end complaint-badges">
                                     <span class="status-pill ${getStatusClass(complaint.status)}">${complaint.status}</span>
                                     <span class="priority-pill ${getPriorityClass(complaint.priority)}">${complaint.priority || "Medium"} Priority</span>
-                                    <span class="support-pill">&#128077; ${affirmationCount}</span>
+                                    <span class="support-pill"><i class="bi bi-hand-thumbs-up-fill"></i>${affirmationCount}</span>
                                     ${complaint.isOverdue ? '<span class="status-pill status-overdue">Overdue</span>' : ""}
                                 </div>
                             </div>
-                            <div class="meta-line"><strong>AI Category:</strong> ${escapeHtml(complaint.category || "-")}</div>
-                            <div class="meta-line"><strong>Area:</strong> ${escapeHtml(location.area)}</div>
-                            <div class="meta-line"><strong>Coordinates:</strong> ${escapeHtml(location.coords)}</div>
-                            <div class="meta-line"><strong>Assigned Admin:</strong> ${escapeHtml(complaint.adminName || "-")} (${escapeHtml(complaint.adminPhone || "-")})</div>
-                            <div class="meta-line"><strong>Deadline:</strong> ${formatDate(complaint.deadline)}</div>
-                            <div class="meta-line"><strong>Created:</strong> ${formatDate(complaint.createdAt)}</div>
-                            <div class="support-row mt-3">
-                                <span class="support-count">&#128077; ${getSupportText(affirmationCount)}</span>
-                                <button class="btn btn-outline-primary btn-sm" onclick="affirmComplaint('${complaint._id}')">Affirm</button>
+
+                            <div class="meta-grid">
+                                <div class="meta-tile">
+                                    <div class="meta-tile-label">Location</div>
+                                    <div class="meta-tile-value">${escapeHtml(location.area)}</div>
+                                </div>
+                                <div class="meta-tile">
+                                    <div class="meta-tile-label">Coordinates</div>
+                                    <div class="meta-tile-value">${escapeHtml(location.coords)}</div>
+                                </div>
+                                <div class="meta-tile">
+                                    <div class="meta-tile-label">Category</div>
+                                    <div class="meta-tile-value">${escapeHtml(complaint.category || "-")}</div>
+                                </div>
+                                <div class="meta-tile">
+                                    <div class="meta-tile-label">Assigned Admin</div>
+                                    <div class="meta-tile-value">${escapeHtml(complaint.adminName || "-")} (${escapeHtml(complaint.adminPhone || "-")})</div>
+                                </div>
+                                <div class="meta-tile">
+                                    <div class="meta-tile-label">Deadline</div>
+                                    <div class="meta-tile-value">${formatDate(complaint.deadline)}</div>
+                                </div>
+                                <div class="meta-tile">
+                                    <div class="meta-tile-label">Created</div>
+                                    <div class="meta-tile-value">${formatDate(complaint.createdAt)}</div>
+                                </div>
+                            </div>
+
+                            <div class="card-actions">
+                                <span class="support-count">👍 ${getSupportText(affirmationCount)}</span>
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <button class="btn btn-outline-primary btn-sm" onclick="affirmComplaint('${complaint._id}')">Affirm</button>
+                                    <button class="btn btn-outline-primary btn-sm" ${canFocusMap ? `onclick="focusHotspotArea('${escapeJs(complaint.location.area)}')"` : "disabled"}>View Map</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -501,9 +559,140 @@ async function loadComplaints() {
     }
 }
 
+function initHotspotMap() {
+    if (hotspotMap || typeof L === "undefined") {
+        return;
+    }
+
+    hotspotMap = L.map("hotspotMap").setView([20.5937, 78.9629], 5);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 18,
+        attribution: "&copy; OpenStreetMap contributors"
+    }).addTo(hotspotMap);
+
+    hotspotLayer = L.layerGroup().addTo(hotspotMap);
+}
+
+function getDensityColor(hotspot) {
+    if (hotspot?.severityLevel === "High") {
+        return "#dc2626";
+    }
+    if (hotspot?.severityLevel === "Medium") {
+        return "#f97316";
+    }
+    return "#16a34a";
+}
+
+async function loadAreaComplaints(area) {
+    try {
+        const response = await fetch(`/complaints/area/${encodeURIComponent(area)}`);
+        if (!response.ok) {
+            throw new Error("Unable to load area complaints");
+        }
+
+        const complaints = await response.json();
+        document.getElementById("areaPanelTitle").innerText = `Complaints in ${area}`;
+        const areaComplaintList = document.getElementById("areaComplaintList");
+
+        if (!complaints.length) {
+            areaComplaintList.innerHTML = `
+                <div class="col-12">
+                    <div class="empty-state">No complaints found for this area.</div>
+                </div>
+            `;
+            return;
+        }
+
+        areaComplaintList.innerHTML = complaints.map(complaint => {
+            const supportCount = getAffirmationCount(complaint);
+
+            return `
+                <div class="col-md-6">
+                    <div class="mini-complaint ${complaint.isOverdue ? "overdue-complaint" : ""}">
+                        <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                            <strong>${escapeHtml(complaint.issue)}</strong>
+                            <span class="priority-pill ${getPriorityClass(complaint.priority)}">${complaint.priority || "Medium"}</span>
+                        </div>
+                        <div class="small text-muted">${escapeHtml(complaint.name)} | ${escapeHtml(complaint.category || "-")}</div>
+                        <div class="small mt-3">Status: <span class="status-pill ${getStatusClass(complaint.status)}">${complaint.status}</span></div>
+                        <div class="small mt-2">👍 ${getSupportText(supportCount)}</div>
+                    </div>
+                </div>
+            `;
+        }).join("");
+    } catch (error) {
+        showToast("Unable to load complaints for this area.");
+    }
+}
+
+async function loadHotspots() {
+    try {
+        initHotspotMap();
+        if (!hotspotLayer) {
+            return;
+        }
+
+        hotspotLayer.clearLayers();
+        const response = await fetch("/hotspots");
+
+        if (!response.ok) {
+            throw new Error("Unable to load hotspots");
+        }
+
+        const hotspots = await response.json();
+        const areaTitle = document.getElementById("areaPanelTitle");
+        const areaList = document.getElementById("areaComplaintList");
+
+        if (!hotspots.length) {
+            areaTitle.innerText = "No complaint hotspots available yet.";
+            areaList.innerHTML = `
+                <div class="col-12">
+                    <div class="empty-state">Hotspot markers will appear once complaints include usable area coordinates.</div>
+                </div>
+            `;
+            return;
+        }
+
+        const bounds = [];
+        hotspots.forEach(hotspot => {
+            const markerColor = getDensityColor(hotspot);
+            const marker = L.circleMarker([hotspot.lat, hotspot.lng], {
+                radius: 12,
+                color: markerColor,
+                fillColor: markerColor,
+                fillOpacity: 0.82,
+                weight: 2
+            });
+
+            marker.bindPopup(`
+                <strong>${escapeHtml(hotspot.area)}</strong><br>
+                Complaints: ${hotspot.count}<br>
+                Support votes: ${hotspot.affirmationCount || 0}<br>
+                Severity: ${escapeHtml(hotspot.severityLevel || "Low")}
+            `);
+            marker.on("click", () => loadAreaComplaints(hotspot.area));
+            marker.addTo(hotspotLayer);
+            bounds.push([hotspot.lat, hotspot.lng]);
+        });
+
+        if (bounds.length) {
+            hotspotMap.fitBounds(bounds, { padding: [40, 40] });
+        }
+    } catch (error) {
+        showToast("Unable to load hotspot map.");
+    }
+}
+
+async function focusHotspotArea(area) {
+    scrollToSection("hotspotsSection");
+    await loadHotspots();
+    await loadAreaComplaints(area);
+}
+
 function getStatusClass(status) {
     if (status === "Pending") return "status-pending";
     if (status === "In Progress") return "status-progress";
+    if (status === "Overdue") return "status-overdue";
     return "status-resolved";
 }
 
@@ -530,7 +719,6 @@ function clearForm() {
 
 function showAssignmentPanel(complaint) {
     const panel = document.getElementById("assignmentPanel");
-
     panel.classList.remove("d-none");
     document.getElementById("assignedAdminName").innerText = complaint.adminName || "-";
     document.getElementById("assignedAdminPhone").innerText = complaint.adminPhone || "-";
@@ -567,14 +755,49 @@ function showToast(message) {
     toast.innerText = message;
     toastBox.appendChild(toast);
 
-    setTimeout(() => {
-        toast.classList.add("visible");
-    }, 10);
-
+    setTimeout(() => toast.classList.add("visible"), 10);
     setTimeout(() => {
         toast.classList.remove("visible");
         setTimeout(() => toast.remove(), 250);
     }, 2500);
+}
+
+function bindSectionNavigation() {
+    const links = Array.from(document.querySelectorAll(".sidebar-link"));
+    const sections = links
+        .map(link => document.getElementById(link.dataset.navTarget))
+        .filter(Boolean);
+
+    links.forEach(link => {
+        link.addEventListener("click", () => {
+            links.forEach(item => item.classList.remove("active"));
+            link.classList.add("active");
+        });
+    });
+
+    if (!("IntersectionObserver" in window) || !sections.length) {
+        return;
+    }
+
+    const observer = new IntersectionObserver(entries => {
+        const visibleEntry = entries
+            .filter(entry => entry.isIntersecting)
+            .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+
+        if (!visibleEntry) {
+            return;
+        }
+
+        const activeId = visibleEntry.target.id;
+        links.forEach(link => {
+            link.classList.toggle("active", link.dataset.navTarget === activeId);
+        });
+    }, {
+        rootMargin: "-20% 0px -55% 0px",
+        threshold: [0.2, 0.4, 0.6]
+    });
+
+    sections.forEach(section => observer.observe(section));
 }
 
 function escapeHtml(value) {
@@ -584,6 +807,10 @@ function escapeHtml(value) {
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#39;");
+}
+
+function escapeJs(value) {
+    return String(value).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 }
 
 function bindFilters() {
@@ -599,14 +826,20 @@ function bindFilters() {
 
 document.addEventListener("DOMContentLoaded", async () => {
     const allowed = await ensureUserPage();
-
     if (!allowed) {
         return;
     }
 
     bindFilters();
+    bindSectionNavigation();
     previewSelectedImage();
     updateAiPreview();
-    loadComplaints();
-    loadRewards();
+    initHotspotMap();
+
+    await Promise.all([
+        loadUserSummary(),
+        loadComplaints(),
+        loadRewards(),
+        loadHotspots()
+    ]);
 });

@@ -6,8 +6,15 @@ const fs = require("fs");
 const multer = require("multer");
 
 const app = express();
-const uploadsDir = path.join(__dirname, "uploads");
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/complaintsDB";
+const PORT = Number(process.env.PORT) || 5000;
+const isProduction = process.env.NODE_ENV === "production";
+const uploadsDir = process.env.UPLOADS_DIR
+    ? path.resolve(process.env.UPLOADS_DIR)
+    : path.join(__dirname, "uploads");
 const DEADLINE_DAYS = 2;
+const RESOLVED_COMPLAINT_RETENTION_HOURS = 24;
+const RESOLVED_COMPLAINT_CLEANUP_INTERVAL_MS = 60 * 60 * 1000;
 const COMPLAINT_CREDIT_REWARD = 5;
 const AFFIRM_CREDIT_REWARD = 2;
 const COUPON_CREDIT_THRESHOLD = 500;
@@ -29,6 +36,10 @@ const departmentAssignments = {
 
 if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+if (isProduction) {
+    app.set("trust proxy", 1);
 }
 
 const storage = multer.diskStorage({
@@ -119,6 +130,10 @@ const ComplaintSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    resolvedAt: {
+        type: Date,
+        default: null
+    },
     status: {
         type: String,
         default: "Pending"
@@ -190,6 +205,10 @@ function getCurrentUser(req) {
 
 function setAuthCookies(res, user) {
     const cookieOptions = ["Path=/", "HttpOnly", "SameSite=Lax"];
+
+    if (isProduction) {
+        cookieOptions.push("Secure");
+    }
 
     res.setHeader("Set-Cookie", [
         `authUser=${encodeURIComponent(user.username)}; ${cookieOptions.join("; ")}`,
@@ -569,6 +588,28 @@ async function refreshOverdueComplaints() {
     ]);
 }
 
+function getResolvedComplaintExpiryDate(now = new Date()) {
+    return new Date(now.getTime() - (RESOLVED_COMPLAINT_RETENTION_HOURS * 60 * 60 * 1000));
+}
+
+async function purgeExpiredResolvedComplaints(now = new Date()) {
+    const expiryDate = getResolvedComplaintExpiryDate(now);
+
+    const result = await Complaint.deleteMany({
+        status: "Resolved",
+        resolvedAt: {
+            $ne: null,
+            $lt: expiryDate
+        }
+    });
+
+    if (result.deletedCount > 0) {
+        console.log(`Deleted ${result.deletedCount} resolved complaints older than ${RESOLVED_COMPLAINT_RETENTION_HOURS} hours`);
+    }
+
+    return result;
+}
+
 function buildComplaintFilters(query) {
     const filters = {};
     const search = (query.search || "").trim();
@@ -656,6 +697,16 @@ async function migrateLegacyComplaints() {
 
         if (!complaint.deadline) {
             complaint.deadline = calculateDeadline(complaint.createdAt || new Date());
+            changed = true;
+        }
+
+        if (complaint.status === "Resolved" && !complaint.resolvedAt) {
+            complaint.resolvedAt = complaint.updatedAt || complaint.createdAt || new Date();
+            changed = true;
+        }
+
+        if (complaint.status !== "Resolved" && complaint.resolvedAt !== null) {
+            complaint.resolvedAt = null;
             changed = true;
         }
 
@@ -751,6 +802,10 @@ app.post("/logout", (_req, res) => {
 app.get("/logout", (_req, res) => {
     clearAuthCookies(res);
     return res.redirect("/login.html");
+});
+
+app.get("/health", (_req, res) => {
+    return res.json({ ok: true });
 });
 
 app.use(express.static(path.join(__dirname, "public")));
@@ -1111,6 +1166,7 @@ app.put("/update/:id", requireAdmin, async (req, res) => {
         const body = req.body || {};
         const status = (body.status || "").trim();
         const complaint = await Complaint.findById(req.params.id);
+        const now = new Date();
 
         if (!status) {
             return res.status(400).json({ message: "Status is required" });
@@ -1121,6 +1177,7 @@ app.put("/update/:id", requireAdmin, async (req, res) => {
         }
 
         complaint.status = status;
+        complaint.resolvedAt = status === "Resolved" ? now : null;
         complaint.isOverdue = isComplaintOverdue(complaint);
         await complaint.save();
 
@@ -1154,7 +1211,7 @@ app.use((err, _req, res, next) => {
 
 async function startServer() {
     try {
-        await mongoose.connect("mongodb://127.0.0.1:27017/complaintsDB");
+        await mongoose.connect(MONGODB_URI);
         console.log("MongoDB connected");
         await Promise.all([
             User.init(),
@@ -1162,10 +1219,16 @@ async function startServer() {
         ]);
         await syncDefaultUsers();
         await migrateLegacyComplaints();
+        await purgeExpiredResolvedComplaints();
 
-        const PORT = 5000;
+        setInterval(() => {
+            purgeExpiredResolvedComplaints().catch(err => {
+                console.error("Resolved complaint cleanup failed:", err);
+            });
+        }, RESOLVED_COMPLAINT_CLEANUP_INTERVAL_MS);
+
         app.listen(PORT, () => {
-            console.log(`Server running at http://localhost:${PORT}`);
+            console.log(`Server running on port ${PORT}`);
         });
     } catch (err) {
         console.error("MongoDB error:", err);

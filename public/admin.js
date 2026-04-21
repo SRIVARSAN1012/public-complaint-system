@@ -12,15 +12,20 @@ async function ensureAdminPage() {
         }
 
         const user = await response.json();
-
         if (user.role !== "admin") {
             window.location.replace(user.redirectTo);
             return false;
         }
 
         const usernameLabel = document.getElementById("usernameLabel");
+        const topCreditsValue = document.getElementById("topCreditsValue");
+
         if (usernameLabel) {
             usernameLabel.innerText = user.username;
+        }
+
+        if (topCreditsValue) {
+            topCreditsValue.innerText = `${user.credits || 0}`;
         }
 
         return true;
@@ -34,6 +39,13 @@ function logout() {
     window.location.replace("/logout");
 }
 
+function scrollToSection(sectionId) {
+    const target = document.getElementById(sectionId);
+    if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+}
+
 function getAffirmationCount(complaint) {
     if (typeof complaint?.affirmationCount === "number") {
         return complaint.affirmationCount;
@@ -43,11 +55,7 @@ function getAffirmationCount(complaint) {
 }
 
 function getSupportText(affirmationCount) {
-    if (affirmationCount === 1) {
-        return "1 supporter";
-    }
-
-    return `${affirmationCount} supporters`;
+    return affirmationCount === 1 ? "1 supporter" : `${affirmationCount} supporters`;
 }
 
 function getFilters() {
@@ -120,7 +128,6 @@ async function loadSummary() {
 async function loadInsights() {
     try {
         const response = await fetch("/insights");
-
         if (!response.ok) {
             throw new Error("Unable to load insights");
         }
@@ -141,7 +148,6 @@ async function loadInsights() {
 async function loadTrending() {
     try {
         const response = await fetch("/trending");
-
         if (!response.ok) {
             throw new Error("Unable to load trending complaints");
         }
@@ -170,8 +176,8 @@ async function loadTrending() {
                         </div>
                         <span class="priority-pill ${getPriorityClass(complaint.priority)}">${complaint.priority || "Low"}</span>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center gap-3 mt-2">
-                        <span class="support-count">&#128077; ${getSupportText(supportCount)}</span>
+                    <div class="d-flex justify-content-between align-items-center gap-3 mt-3">
+                        <span class="support-count">👍 ${getSupportText(supportCount)}</span>
                         <span class="status-pill ${getStatusClass(complaint.status)}">${complaint.status}</span>
                     </div>
                 </div>
@@ -185,14 +191,12 @@ async function loadTrending() {
 async function loadAreaComplaints(area) {
     try {
         const response = await fetch(`/complaints/area/${encodeURIComponent(area)}`);
-
         if (!response.ok) {
             throw new Error("Unable to load area complaints");
         }
 
         const complaints = await response.json();
         document.getElementById("areaPanelTitle").innerText = `Complaints in ${area}`;
-
         const areaComplaintList = document.getElementById("areaComplaintList");
 
         if (!complaints.length) {
@@ -212,11 +216,11 @@ async function loadAreaComplaints(area) {
                     <div class="mini-complaint ${complaint.isOverdue ? "overdue-complaint" : ""}">
                         <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
                             <strong>${escapeHtml(complaint.issue)}</strong>
-                            <span class="priority-pill ${getPriorityClass(complaint.priority)}">${complaint.priority}</span>
+                            <span class="priority-pill ${getPriorityClass(complaint.priority)}">${complaint.priority || "Medium"}</span>
                         </div>
                         <div class="small text-muted">${escapeHtml(complaint.name)} | ${escapeHtml(complaint.category || "-")}</div>
-                        <div class="small mt-2">Status: <span class="status-pill ${getStatusClass(complaint.status)}">${complaint.status}</span></div>
-                        <div class="small mt-2">&#128077; ${getSupportText(supportCount)}</div>
+                        <div class="small mt-3">Status: <span class="status-pill ${getStatusClass(complaint.status)}">${complaint.status}</span></div>
+                        <div class="small mt-2">👍 ${getSupportText(supportCount)}</div>
                     </div>
                 </div>
             `;
@@ -232,13 +236,11 @@ async function loadHotspots() {
         hotspotLayer.clearLayers();
 
         const response = await fetch("/hotspots");
-
         if (!response.ok) {
             throw new Error("Unable to load hotspots");
         }
 
         const hotspots = await response.json();
-
         if (!hotspots.length) {
             document.getElementById("areaPanelTitle").innerText = "No complaint hotspots available yet.";
             document.getElementById("areaComplaintList").innerHTML = `
@@ -250,14 +252,13 @@ async function loadHotspots() {
         }
 
         const bounds = [];
-
         hotspots.forEach(hotspot => {
             const markerColor = getDensityColor(hotspot);
             const marker = L.circleMarker([hotspot.lat, hotspot.lng], {
                 radius: 12,
                 color: markerColor,
                 fillColor: markerColor,
-                fillOpacity: 0.8,
+                fillOpacity: 0.82,
                 weight: 2
             });
 
@@ -282,10 +283,7 @@ async function loadHotspots() {
 
 function formatLocation(location) {
     if (!location) {
-        return {
-            area: "-",
-            coords: "-"
-        };
+        return { area: "-", coords: "-" };
     }
 
     const area = location.area || "-";
@@ -341,18 +339,37 @@ async function loadComplaints() {
                                 <div class="d-flex flex-wrap gap-2 justify-content-end complaint-badges">
                                     <span class="status-pill ${getStatusClass(complaint.status)}">${complaint.status}</span>
                                     <span class="priority-pill ${getPriorityClass(complaint.priority)}">${complaint.priority || "Medium"} Priority</span>
-                                    <span class="support-pill">&#128077; ${affirmationCount}</span>
+                                    <span class="support-pill"><i class="bi bi-hand-thumbs-up-fill"></i>${affirmationCount}</span>
                                     ${complaint.isOverdue ? '<span class="status-pill status-overdue">Overdue</span>' : ""}
                                 </div>
                             </div>
 
-                            <div class="meta-line"><strong>AI Category:</strong> ${escapeHtml(complaint.category || "-")}</div>
-                            <div class="meta-line"><strong>Area:</strong> ${escapeHtml(location.area)}</div>
-                            <div class="meta-line"><strong>Coordinates:</strong> ${escapeHtml(location.coords)}</div>
-                            <div class="meta-line"><strong>Assigned Admin:</strong> ${escapeHtml(complaint.adminName || "-")} (${escapeHtml(complaint.adminPhone || "-")})</div>
-                            <div class="meta-line"><strong>Deadline:</strong> ${formatDate(complaint.deadline)}</div>
-                            <div class="meta-line"><strong>Created:</strong> ${formatDate(complaint.createdAt)}</div>
-                            <div class="meta-line"><strong>Community Support:</strong> &#128077; ${getSupportText(affirmationCount)}</div>
+                            <div class="meta-grid">
+                                <div class="meta-tile">
+                                    <div class="meta-tile-label">Location</div>
+                                    <div class="meta-tile-value">${escapeHtml(location.area)}</div>
+                                </div>
+                                <div class="meta-tile">
+                                    <div class="meta-tile-label">Coordinates</div>
+                                    <div class="meta-tile-value">${escapeHtml(location.coords)}</div>
+                                </div>
+                                <div class="meta-tile">
+                                    <div class="meta-tile-label">Category</div>
+                                    <div class="meta-tile-value">${escapeHtml(complaint.category || "-")}</div>
+                                </div>
+                                <div class="meta-tile">
+                                    <div class="meta-tile-label">Assigned Admin</div>
+                                    <div class="meta-tile-value">${escapeHtml(complaint.adminName || "-")} (${escapeHtml(complaint.adminPhone || "-")})</div>
+                                </div>
+                                <div class="meta-tile">
+                                    <div class="meta-tile-label">Deadline</div>
+                                    <div class="meta-tile-value">${formatDate(complaint.deadline)}</div>
+                                </div>
+                                <div class="meta-tile">
+                                    <div class="meta-tile-label">Community Support</div>
+                                    <div class="meta-tile-value">👍 ${getSupportText(affirmationCount)}</div>
+                                </div>
+                            </div>
 
                             <div class="row g-2 align-items-center mt-3">
                                 <div class="col-sm-8">
@@ -390,7 +407,6 @@ async function updateStatus(id, status) {
         });
 
         const data = await response.json();
-
         if (!response.ok) {
             throw new Error(data.message || "Unable to update status");
         }
@@ -413,6 +429,7 @@ function loadDashboard() {
 function getStatusClass(status) {
     if (status === "Pending") return "status-pending";
     if (status === "In Progress") return "status-progress";
+    if (status === "Overdue") return "status-overdue";
     return "status-resolved";
 }
 
@@ -434,14 +451,49 @@ function showToast(message) {
     toast.innerText = message;
     toastBox.appendChild(toast);
 
-    setTimeout(() => {
-        toast.classList.add("visible");
-    }, 10);
-
+    setTimeout(() => toast.classList.add("visible"), 10);
     setTimeout(() => {
         toast.classList.remove("visible");
         setTimeout(() => toast.remove(), 250);
     }, 2500);
+}
+
+function bindSectionNavigation() {
+    const links = Array.from(document.querySelectorAll(".sidebar-link"));
+    const sections = links
+        .map(link => document.getElementById(link.dataset.navTarget))
+        .filter(Boolean);
+
+    links.forEach(link => {
+        link.addEventListener("click", () => {
+            links.forEach(item => item.classList.remove("active"));
+            link.classList.add("active");
+        });
+    });
+
+    if (!("IntersectionObserver" in window) || !sections.length) {
+        return;
+    }
+
+    const observer = new IntersectionObserver(entries => {
+        const visibleEntry = entries
+            .filter(entry => entry.isIntersecting)
+            .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+
+        if (!visibleEntry) {
+            return;
+        }
+
+        const activeId = visibleEntry.target.id;
+        links.forEach(link => {
+            link.classList.toggle("active", link.dataset.navTarget === activeId);
+        });
+    }, {
+        rootMargin: "-20% 0px -55% 0px",
+        threshold: [0.2, 0.4, 0.6]
+    });
+
+    sections.forEach(section => observer.observe(section));
 }
 
 function escapeHtml(value) {
@@ -464,12 +516,12 @@ function bindFilters() {
 
 document.addEventListener("DOMContentLoaded", async () => {
     const allowed = await ensureAdminPage();
-
     if (!allowed) {
         return;
     }
 
     bindFilters();
+    bindSectionNavigation();
     initMap();
     loadDashboard();
 });

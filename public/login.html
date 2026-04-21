@@ -8,33 +8,44 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="auth-page">
-    <div class="container py-5">
-        <div class="row justify-content-center">
-            <div class="col-lg-5 col-md-7">
-                <div class="card shadow auth-card border-0">
-                    <div class="card-body p-4 p-md-5">
-                        <div class="auth-badge mb-3">Citizen Access</div>
-                        <h1 class="auth-title mb-2">Welcome Back</h1>
-                        <p class="auth-copy mb-4">Log in to submit complaints, track updates, or manage the civic response dashboard.</p>
+    <div class="auth-shell">
+        <div class="auth-card-wrap">
+            <div class="auth-panel">
+                <div class="auth-badge mb-3">Citizen Access</div>
+                <h1 class="auth-title mb-2">CivicFlow Login</h1>
+                <p class="auth-copy mb-4">Access the complaint management portal used to report issues, review hotspot activity, and manage civic response operations.</p>
 
-                        <form id="loginForm">
-                            <div class="mb-3">
-                                <label for="username" class="form-label auth-label">Username</label>
-                                <input id="username" class="form-control auth-input" placeholder="Enter your username" autocomplete="username">
-                            </div>
-                            <div class="mb-3">
-                                <label for="password" class="form-label auth-label">Password</label>
-                                <input id="password" type="password" class="form-control auth-input" placeholder="Enter your password" autocomplete="current-password">
-                            </div>
+                <div class="auth-feature-list">
+                    <div class="auth-feature-item"><i class="bi bi-shield-check"></i><span>Secure access for citizens and admins</span></div>
+                    <div class="auth-feature-item"><i class="bi bi-geo-alt"></i><span>Real-time complaint hotspot monitoring</span></div>
+                    <div class="auth-feature-item"><i class="bi bi-coin"></i><span>Credits and coupon rewards tracking</span></div>
+                </div>
+            </div>
 
-                            <button id="loginButton" type="submit" class="btn btn-primary w-100 py-2 auth-button">Login</button>
-                        </form>
+            <div class="card shadow auth-card border-0">
+                <div class="card-body p-4 p-md-5">
+                    <div class="auth-form-eyebrow">Sign In</div>
+                    <h2 class="auth-form-title mb-2">Welcome back</h2>
+                    <p class="auth-form-copy mb-4">Enter your credentials to continue to your complaint dashboard.</p>
 
-                        <p id="error" class="text-danger text-center mt-3 mb-0"></p>
-                    </div>
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label for="username" class="form-label auth-label">Username</label>
+                            <input id="username" class="form-control auth-input" placeholder="Enter your username" autocomplete="username">
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label auth-label">Password</label>
+                            <input id="password" type="password" class="form-control auth-input" placeholder="Enter your password" autocomplete="current-password">
+                        </div>
+
+                        <button id="loginButton" type="submit" class="btn btn-primary w-100 py-2 auth-button">Login</button>
+                    </form>
+
+                    <p id="error" class="text-danger text-center mt-3 mb-0"></p>
                 </div>
             </div>
         </div>

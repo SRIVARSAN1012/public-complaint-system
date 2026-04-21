@@ -24,27 +24,27 @@
             </div>
 
             <nav class="sidebar-nav">
-                <a class="sidebar-link active" href="#dashboardSection">
+                <a class="sidebar-link active" href="#dashboardSection" data-nav-target="dashboardSection">
                     <i class="bi bi-grid-1x2-fill"></i>
                     <span>Dashboard</span>
                 </a>
-                <a class="sidebar-link" href="#complaintsSection">
+                <a class="sidebar-link" href="#complaintsSection" data-nav-target="complaintsSection">
                     <i class="bi bi-chat-square-text-fill"></i>
                     <span>Complaints</span>
                 </a>
-                <a class="sidebar-link" href="#hotspotsSection">
+                <a class="sidebar-link" href="#hotspotsSection" data-nav-target="hotspotsSection">
                     <i class="bi bi-geo-alt-fill"></i>
                     <span>Hotspots Map</span>
                 </a>
-                <a class="sidebar-link" href="#trendingSection">
+                <a class="sidebar-link" href="#trendingSection" data-nav-target="trendingSection">
                     <i class="bi bi-fire"></i>
-                    <span>Supported Issues</span>
+                    <span>Rewards / Credits</span>
                 </a>
             </nav>
 
             <div class="sidebar-footer">
                 <div class="sidebar-footer-label">Admin Workspace</div>
-                <p class="sidebar-footer-copy">Monitor service performance, identify hotspots, and prioritize civic issues faster.</p>
+                <p class="sidebar-footer-copy">Monitor complaint flow, inspect hotspots, and prioritize high-impact city interventions.</p>
             </div>
         </aside>
 
@@ -59,9 +59,19 @@
                 </div>
 
                 <div class="topbar-actions">
+                    <div class="topbar-pill credits-pill">
+                        <i class="bi bi-coin"></i>
+                        <div>
+                            <div class="topbar-meta">Credits</div>
+                            <span id="topCreditsValue">0</span>
+                        </div>
+                    </div>
                     <div class="topbar-pill">
                         <i class="bi bi-shield-check"></i>
-                        <span>Admin Access</span>
+                        <div>
+                            <div class="topbar-meta">Access</div>
+                            <span>Admin</span>
+                        </div>
                     </div>
                     <div class="topbar-user">
                         <div class="user-avatar"><i class="bi bi-person-badge-fill"></i></div>
@@ -80,44 +90,49 @@
                         <div>
                             <p class="eyebrow mb-2">Overview</p>
                             <h2 class="section-title">City Operations Dashboard</h2>
-                            <p class="section-copy mb-0">A production-grade control center for complaint volumes, resolution health, and high-priority monitoring.</p>
+                            <p class="section-copy mb-0">A production-style control center for complaint volumes, SLA health, hotspot severity, and priority queues.</p>
                         </div>
                     </div>
 
-                    <div class="row g-3 mb-4">
+                    <div class="row g-4 mb-4">
                         <div class="col-lg col-md-4 col-sm-6">
                             <div class="summary-card total-card">
                                 <p class="summary-label">Total Complaints</p>
                                 <h3 id="totalCount">0</h3>
+                                <p class="summary-note">Entire complaint intake</p>
                             </div>
                         </div>
                         <div class="col-lg col-md-4 col-sm-6">
                             <div class="summary-card pending-card">
                                 <p class="summary-label">Pending</p>
                                 <h3 id="pendingCount">0</h3>
+                                <p class="summary-note">Waiting to start</p>
                             </div>
                         </div>
                         <div class="col-lg col-md-4 col-sm-6">
                             <div class="summary-card progress-card">
                                 <p class="summary-label">In Progress</p>
                                 <h3 id="progressCount">0</h3>
+                                <p class="summary-note">Under active review</p>
                             </div>
                         </div>
                         <div class="col-lg col-md-4 col-sm-6">
                             <div class="summary-card resolved-card">
                                 <p class="summary-label">Resolved</p>
                                 <h3 id="resolvedCount">0</h3>
+                                <p class="summary-note">Closed successfully</p>
                             </div>
                         </div>
                         <div class="col-lg col-md-4 col-sm-6">
                             <div class="summary-card overdue-card">
-                                <p class="summary-label">Overdue</p>
+                                <p class="summary-label">High Priority</p>
                                 <h3 id="overdueCount">0</h3>
+                                <p class="summary-note">Urgent complaint backlog</p>
                             </div>
                         </div>
                     </div>
 
-                    <div class="row g-3">
+                    <div class="row g-4">
                         <div class="col-lg-4">
                             <div class="insight-card">
                                 <p class="summary-label mb-2">Top 3 Areas</p>
@@ -139,61 +154,13 @@
                     </div>
                 </section>
 
-                <section id="trendingSection" class="content-section">
-                    <div class="section-card">
-                        <div class="card-body p-4">
-                            <div class="section-inline-header mb-3">
-                                <div>
-                                    <h5 class="mb-1"><i class="bi bi-fire text-danger me-2"></i>Most Supported Issues</h5>
-                                    <p class="text-muted mb-0">Community affirmations help surface the complaints that need faster attention.</p>
-                                </div>
-                                <button class="btn btn-outline-primary" onclick="loadTrending()">Refresh Trending</button>
-                            </div>
-                            <div id="trendingList" class="trending-list"></div>
-                        </div>
-                    </div>
-                </section>
-
-                <section id="hotspotsSection" class="content-section">
-                    <div class="section-card">
-                        <div class="card-body p-4">
-                            <div class="section-inline-header mb-3">
-                                <div>
-                                    <h5 class="mb-1">Complaint Hotspots</h5>
-                                    <p class="text-muted mb-0">Marker color reflects complaint density plus community support across areas.</p>
-                                </div>
-                                <button class="btn btn-outline-primary" onclick="loadHotspots()">Refresh Map</button>
-                            </div>
-
-                            <div id="hotspotMap" class="hotspot-map"></div>
-
-                            <div class="hotspot-legend mt-3">
-                                <span class="legend-title">Severity Legend</span>
-                                <span class="legend-item"><span class="legend-dot legend-green"></span>Low</span>
-                                <span class="legend-item"><span class="legend-dot legend-orange"></span>Medium</span>
-                                <span class="legend-item"><span class="legend-dot legend-red"></span>High</span>
-                            </div>
-
-                            <div class="area-panel mt-4">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <div>
-                                        <h6 class="mb-1">Area Drill Down</h6>
-                                        <p id="areaPanelTitle" class="text-muted mb-0">Click a marker to view complaints for that area.</p>
-                                    </div>
-                                </div>
-                                <div id="areaComplaintList" class="row g-3"></div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
                 <section id="complaintsSection" class="content-section">
                     <div class="section-card">
                         <div class="card-body p-4">
                             <div class="section-inline-header mb-3">
                                 <div>
                                     <h5 class="mb-1">Complaint Queue</h5>
-                                    <p class="text-muted mb-0">Review AI classification, routing, deadlines, overdue status, and support momentum.</p>
+                                    <p class="text-muted mb-0">Review complaint cards, update statuses, and triage the most urgent cases first.</p>
                                 </div>
                                 <button class="btn btn-primary" onclick="loadDashboard()">Refresh Complaints</button>
                             </div>
@@ -213,7 +180,55 @@
                                 </div>
                             </div>
 
-                            <div id="complaintGrid" class="row g-3 mt-1"></div>
+                            <div id="complaintGrid" class="row g-4 mt-1"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="hotspotsSection" class="content-section">
+                    <div class="section-card">
+                        <div class="card-body p-4">
+                            <div class="section-inline-header mb-3">
+                                <div>
+                                    <h5 class="mb-1">Complaint Hotspots</h5>
+                                    <p class="text-muted mb-0">Map complaint density and support signals to identify where intervention is most urgent.</p>
+                                </div>
+                                <button class="btn btn-outline-primary" onclick="loadHotspots()">Refresh Map</button>
+                            </div>
+
+                            <div id="hotspotMap" class="hotspot-map"></div>
+
+                            <div class="hotspot-legend mt-3">
+                                <span class="legend-title">Severity Legend</span>
+                                <span class="legend-item"><span class="legend-dot legend-green"></span>Green -> low</span>
+                                <span class="legend-item"><span class="legend-dot legend-orange"></span>Orange -> medium</span>
+                                <span class="legend-item"><span class="legend-dot legend-red"></span>Red -> high</span>
+                            </div>
+
+                            <div class="area-panel mt-4">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <div>
+                                        <h6 class="mb-1">Area Drill Down</h6>
+                                        <p id="areaPanelTitle" class="text-muted mb-0">Click a marker to view complaints for that area.</p>
+                                    </div>
+                                </div>
+                                <div id="areaComplaintList" class="row g-3"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="trendingSection" class="content-section">
+                    <div class="section-card">
+                        <div class="card-body p-4">
+                            <div class="section-inline-header mb-3">
+                                <div>
+                                    <h5 class="mb-1">Most Supported Issues</h5>
+                                    <p class="text-muted mb-0">Community affirmation highlights complaints that deserve faster prioritization.</p>
+                                </div>
+                                <button class="btn btn-outline-primary" onclick="loadTrending()">Refresh Trending</button>
+                            </div>
+                            <div id="trendingList" class="trending-list"></div>
                         </div>
                     </div>
                 </section>
