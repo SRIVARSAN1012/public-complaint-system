@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Public Complaint System</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="container mt-5">
+
+    <!-- Title -->
+    <h2 class="text-center mb-4">🚨 Public Complaint System</h2>
+
+    <!-- Complaint Form -->
+    <div class="card shadow p-4 mb-4">
+        <h5 class="mb-3">Submit a Complaint</h5>
+
+        <input id="name" class="form-control mb-3" placeholder="Your Name">
+
+        <input id="issue" class="form-control mb-3" placeholder="Issue (e.g. Garbage, Streetlight)">
+
+        <input id="location" class="form-control mb-3" placeholder="Location">
+
+        <button class="btn btn-primary w-100" onclick="submitComplaint()">
+            Submit Complaint
+        </button>
+    </div>
+
+    <!-- Complaint List -->
+    <div class="card shadow p-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5>📋 Complaints</h5>
+            <button class="btn btn-success" onclick="loadComplaints()">Refresh</button>
+        </div>
+
+        <ul id="list" class="list-group mt-3"></ul>
+    </div>
+
+</div>
+
+<!-- Script -->
+<script src="script.js"></script>
+
+</body>
+</html>
